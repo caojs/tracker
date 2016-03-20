@@ -42,7 +42,7 @@ We can call it for its value (assuming there's a `currentTemperatureCelsius` fun
 But, if the `currentTemperatureCelsius` function is Tracker-aware (or even if it's not, but as long it reads the current temperature ultimately from some Tracker-aware data source), then we can also call `currentTemperatureFahrenheit` _reactively_.
 
 ```javascript
-var Tracker = require('tracker');
+var Tracker = require('trackerjs');
 
 // Reactive function
 function currentTemperatureFahrenheit () {
@@ -65,7 +65,7 @@ The current temperature is 39.2 F.
 The function passed to `Tracker.autorun` is called once immediately, and then it's called again whenever there are any changes to any of the _reactive data sources_ that it referenced. To make this work, `currentTemperatureCelsius` just needs to register with Tracker as a reactive data source when it's called, which takes only a few lines of code.
 
 ```javascript
-var Tracker = require('tracker');
+var Tracker = require('trackerjs');
 var dep = new Tracker.Dependency();
 var temperature = randomTemperature();
 

@@ -10,7 +10,7 @@
     module.exports = factory();
   } else {
     // Browser globals (root is window)
-    root.tracker = factory();
+    root.trackerjs = factory();
   }
 }(this, function () {
 

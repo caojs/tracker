@@ -1,5 +1,5 @@
 {
-  "name": "tracker",
+  "name": "trackerjs",
   "version": "1.0.0",
   "description": "A fork of Meteor Tracker",
   "main": "index.js",
