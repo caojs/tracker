@@ -14,14 +14,21 @@ to Tracker, consult the thorough and informative [Tracker
 Manual](https://github.com/meteor/meteor/wiki/Tracker-Manual), which
 is five times longer than the Tracker source code itself. You can also browse the API reference on the [main Meteor docs page](http://docs.meteor.com/#tracker).
 
+## Installation
+
+npm:
+```
+npm install --save tracker
+```
+
 ## Example
 
 Take this ordinary JavaScript function:
 
 ```javascript
-var currentTemperatureFahrenheit = function () {
+function currentTemperatureFahrenheit () {
   return currentTemperatureCelsius() * 9/5 + 32;
-};
+}
 
 ```
 
@@ -32,63 +39,119 @@ We can call it for its value (assuming there's a `currentTemperatureCelsius` fun
 71.8
 ```
 
-But, if the `currentTemperatureCelsius` function is Tracker-aware (or even if it's not, but as long it reads the current temperature ultimately from some Tracker-aware data source), then we can also call `currentTemperatureFahrenheit` _reactively_:
+But, if the `currentTemperatureCelsius` function is Tracker-aware (or even if it's not, but as long it reads the current temperature ultimately from some Tracker-aware data source), then we can also call `currentTemperatureFahrenheit` _reactively_.
+
+```javascript
+var Tracker = require('tracker');
+
+// Reactive function
+function currentTemperatureFahrenheit () {
+  return currentTemperatureCelsius() * 9/5 + 32;
+}
+
+var handle = Tracker.autorun(function () {
+  console.log('The current temperature is', currentTemperatureFahrenheit(), 'F.');
+});
 
 ```
-> var handle = Tracker.autorun(function () {
-  console.log("The current temperature is", currentTemperatureFahrenheit(),
-              "F");
-  });
-The current temperature is 71.8 F       (printed immediately)
-The current temperature is 71.9 F       (printed a few minutes later)
-> handle.stop();                        (stop temperature changes from printing)
+```
+The current temperature is 113 F.
+The current temperature is 75.2 F.
+The current temperature is 39.2 F.
+...                      
 
 ```
 
 The function passed to `Tracker.autorun` is called once immediately, and then it's called again whenever there are any changes to any of the _reactive data sources_ that it referenced. To make this work, `currentTemperatureCelsius` just needs to register with Tracker as a reactive data source when it's called, which takes only a few lines of code.
 
-Or, instead of calling `Tracker.autorun` ourselves, we might use `currentTemperatureFahrenheit` in a [Blaze](https://www.meteor.com/blaze) template:
+```javascript
+var Tracker = require('tracker');
+var dep = new Tracker.Dependency();
+var temperature = randomTemperature();
 
-```handlebars
-<!-- In demo.html -->
-<template name="demo">
-  The current temperature is {{currentTemp}} degrees Fahrenheit.
-  {{#if belowFreezing}}
-    That's below freezing!
-  {{/if}}
-</templates>
+// create random temperature
+function randomTemperature () {
+  var min = 0;
+  var max = 100;
+  var range = max - min;
+  var temperature = Math.ceil(Math.random() * range) + min;
+  return temperature;
+}
+
+// Data source
+function currentTemperatureCelsius () {
+  dep.depend();
+  return temperature;
+}
+
+// dep.changed() will cause Tracker-aware recompute.
+setInterval(function () {
+  temperature = randomTemperature();
+  dep.changed();
+  console.log('Temperature changed.');
+}, 1000);
+
 ```
+
+The function Tracker.autorun return a computation. And we can stop "Reactive function" recomputing everytime data source change by using stop function in computation object.
 
 ```javascript
-// In demo.js
-Template.demo.helpers({
-  currentTemp: function () {
-    return currentTemperatureFahrenheit();
-  },
-  belowFreezing: function () {
-    return currentTemperatureFahrenheit() < 32.0;
-  }
-});
+handle.stop();
+
 ```
 
-When this template is shown, the temperature shown on the screen will update live as the weather changes. The "below freezing" message will appear when the temperature dips below freezing, and disappear when it rises above freezing, all without having to write any additiona logic. Blaze makes this work simply by calling `Tracker.autorun` around its calls out to our helper functions.
-
-
-What does it look like on the other side, for package authors that are creating new reactive data sources? Here's what the implementation of `currentTemperatureCelsius` might look like (supposing you had an object `Thermometer`, with methods `read` and `onChange`):
+## Code
 
 ```javascript
-var temperatureDep = new Tracker.Dependency;
+var Tracker = require('tracker');
+var dep = new Tracker.Dependency();
 
-var currentTemperatureCelsius = function () {
-  temperatureDep.depend();
-  return Thermometer.read();
-};
+// create random temperature
+function randomTemperature () {
+  var min = 0;
+  var max = 100;
+  var range = max - min;
+  return Math.ceil(Math.random() * range) + min;
+}
 
-Thermometer.onChange(function () {
-  temperatureDep.changed();
+var temperature = randomTemperature();
+
+// Data source
+function currentTemperatureCelsius () {
+  dep.depend();
+  return temperature;
+}
+
+// dep.changed() will cause Tracker-aware recompute.
+setInterval(function () {
+  temperature = randomTemperature();
+  dep.changed();
+  console.log('Temperature changed.');
+}, 1000);
+
+// Reactive function
+function currentTemperatureFahrenheit () {
+  return currentTemperatureCelsius() * 9/5 + 32;
+}
+
+var handle = Tracker.autorun(function () {
+  console.log('The current temperature is', currentTemperatureFahrenheit(), 'F.');
 });
+
+// stop recomputing
+setTimeout(function () {
+  console.log('Stop recomputing.')
+  handle.stop();
+}, 3000);
 ```
-
-As you can see, it only takes a few lines of code to make `Thermometer` Tracker-aware so that it can participate in transparent reactivity.
-
-It's easy for a library to detect if Tracker is available, and cooperate with it if so (by making the appropriate `depend` and `changed` calls, which have virtually no overhead except when called in a reactive context), and function normally if not. So adding Tracker support doesn't break compatibility with existing users of a library, and the support doesn't have any performance impact if it's not used. (The impact when it *is* used is small as well.)
+```
+The current temperature is 75.2 F.
+Temperature changed.
+The current temperature is 93.2 F.
+Temperature changed.
+The current temperature is 123.8 F.
+Temperature changed.
+Stop recomputing.
+Temperature changed.
+Temperature changed.
+```
