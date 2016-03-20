@@ -1,0 +1,26 @@
+{
+  "name": "trackerjs",
+  "description": "A fork of Meteor Tracker",
+  "main": "index.js",
+  "authors": [
+    "caojs <ctdaibk09@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "Meteor",
+    "Tracker",
+    "Functional",
+    "Reactive",
+    "Programming",
+    "FRP"
+  ],
+  "homepage": "https://github.com/caojs/tracker",
+  "moduleType": ["globals", "amd", "node"],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
